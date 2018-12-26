@@ -2,9 +2,12 @@
 local log = FH3095Debug.log
 local RCE = RepeatableCalendarEvents
 
-function RCE:createOptions()
+local Settings = {}
+RCE.Class:createSingleton("settings", Settings, {})
+
+function Settings:createOptions()
 	local optionsTable = {
-		name = self.consts.ADDON_NAME,
+		name = RCE.consts.ADDON_NAME,
 		type = "group",
 		args = {
 			basic = {
@@ -16,34 +19,36 @@ function RCE:createOptions()
 				args = {
 					eventsInFuture = {
 						type	= "range",
-						name	= self.l.EventsInFutureName,
-						desc	= self.l.EventsInFutureDesc,
+						name	= RCE.l.EventsInFutureName,
+						desc	= RCE.l.EventsInFutureDesc,
+						width	= "full",
 						min		= 1,
 						max		= 365,
 						softMax	= 32,
 						step	= 1,
 					},
 					autoModNames = {
-						type = "input",
-						name = self.l.AutoModNamesName,
-						multiline = true,
-						width = "full",
+						type		= "input",
+						name		= RCE.l.AutoModNamesName,
+						desc		= RCE.l.AutoModNamesDesc,
+						multiline	= true,
+						width		= "full",
 					}
 				}
 			},
-			profile = LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db),
+			profile = LibStub("AceDBOptions-3.0"):GetOptionsTable(RCE.db),
 		}
 	}
-	LibStub("AceConfig-3.0"):RegisterOptionsTable(self.consts.ADDON_NAME, optionsTable)
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions(self.consts.ADDON_NAME)
+	LibStub("AceConfig-3.0"):RegisterOptionsTable(RCE.consts.ADDON_NAME, optionsTable)
+	LibStub("AceConfigDialog-3.0"):AddToBlizOptions(RCE.consts.ADDON_NAME)
 end
 
 
-function RCE:SetBasicOption(info, value)
+function Settings:SetBasicOption(info, value)
 	log("Set option", info[#info], value)
-	self.db.profile[info[#info]] = value
+	RCE.db.profile[info[#info]] = value
 end
 
-function RCE:GetBasicOption(info)
-	return self.db.profile[info[#info]]
+function Settings:GetBasicOption(info)
+	return RCE.db.profile[info[#info]]
 end

@@ -2,12 +2,15 @@
 local log = FH3095Debug.log
 local RCE = RepeatableCalendarEvents
 
-function RCE:increaseDate(repeatType, dateTable)
-	if repeatType == self.consts.REPEAT_TYPES.WEEKLY then
+local EventRepeater = {}
+RCE.Class:createSingleton("eventRepeater", EventRepeater, {})
+
+local function increaseDate(repeatType, dateTable)
+	if repeatType == RCE.consts.REPEAT_TYPES.WEEKLY then
 		dateTable.day = dateTable.day + 7
-	elseif repeatType == self.consts.REPEAT_TYPES.MONTHLY then
+	elseif repeatType == RCE.consts.REPEAT_TYPES.MONTHLY then
 		dateTable.month = dateTable.month + 1
-	elseif repeatType == self.consts.REPEAT_TYPES.YEARLY then
+	elseif repeatType == RCE.consts.REPEAT_TYPES.YEARLY then
 		dateTable.year = dateTable.year + 1
 	else
 		error("Unknown repeattype " .. repeatType)
@@ -23,58 +26,59 @@ local function dateTableToEvent(dateTable, event)
 	event.minute = dateTable.min
 end
 
-function RCE:createWoWEvent(event)
+local function createWoWEvent(event)
 	if event.guildEvent and IsInGuild() then
-		CalendarNewGuildEvent()
+		C_Calendar.CreateGuildSignUpEvent()
 	else
-		CalendarNewEvent()
+		C_Calendar.CreatePlayerEvent()
 	end
-	CalendarEventSetTitle(event.title)
-	CalendarEventSetDescription(event.desc)
-	CalendarEventSetType(event.type)
-	CalendarEventSetTime(event.hour, event.minute)
-	CalendarEventSetDate(event.month, event.day, event.year)
+	C_Calendar.EventSetTitle(event.title)
+	C_Calendar.EventSetDescription(event.desc)
+	C_Calendar.EventSetType(event.type)
+	C_Calendar.EventSetTime(event.hour, event.minute)
+	C_Calendar.EventSetDate(event.month, event.day, event.year)
 	if event.locked then
-		CalendarEventSetLocked()
+		C_Calendar.EventSetLocked()
 	end
 	if not event.guildEvent and event.customGuildInvite and IsInGuild() then
-		CalendarMassInviteGuild(event.guildInvMinLevel, event.guildInvMaxLevel, event.guildInvRank)
+		C_Calendar.MassInviteGuild(event.guildInvMinLevel, event.guildInvMaxLevel, event.guildInvRank)
 	end
 
-	local cache = self:getCacheForEventType(event.type)
+	local cache = RCE.core:getCacheForEventType(event.type)
 	if cache ~= nil then
 		local textureId = cache[event.raidOrDungeon].difficulties[event.difficulty].index
-		CalendarEventSetTextureID(textureId)
+		C_Calendar.EventSetTextureID(textureId)
 	end
 end
 
-function RCE:repeatEvent()
-	log("RepeatEvent")
+function EventRepeater:execute()
+	log("EventRepeater:execute")
 
 	local currentTime = time()
-	local maxCreateTime = time() + self.db.profile.eventsInFuture * 86400
-	for key,event in pairs(self.db.profile.events) do
-		local dateTable = self:timeTableFromEvent(event)
+	local maxCreateTime = time() + RCE.db.profile.eventsInFuture * 86400
+	for key,event in pairs(RCE.db.profile.events) do
+		local dateTable = RCE.core:timeTableFromEvent(event)
 		local eventTime = time(dateTable)
 		log("RepeatEvent Check", event.name, date("%c", eventTime))
 
 		while eventTime < currentTime do
 			-- increase eventTime until it reaches today
-			self:increaseDate(event.repeatType, dateTable)
+			increaseDate(event.repeatType, dateTable)
 			eventTime = time(dateTable)
+			log("EventRepeater added to", date("%c", eventTime))
 		end
 
 		while eventTime < maxCreateTime do
 			log("RepeatEvent CheckFor", event.name, date("%c", eventTime))
-			dateTable = self:normalizeDateTable(dateTable)
-			self:setCalendarMonthToDate(dateTable)
+			dateTable = RCE.core:normalizeDateTable(dateTable)
+			RCE.core:setCalendarMonthToDate(dateTable)
 
 			-- Loop through events of that day to see if event already exists
-			local numEvents = CalendarGetNumDayEvents(0, dateTable.day)
+			local numEvents = C_Calendar.GetNumDayEvents(0, dateTable.day)
 			local foundEvent = false
 			for i=1,numEvents do
-				local title,_,_,calendarType = CalendarGetDayEvent(0, dateTable.day, i)
-				if (calendarType == "GUILD_EVENT" or calendarType == "PLAYER") and title == event.title then
+				local otherEvent = C_Calendar.GetDayEvent(0, dateTable.day, i)
+				if (otherEvent.calendarType == "GUILD_EVENT" or otherEvent.calendarType == "PLAYER") and otherEvent.title == event.title then
 					log("RepeatEvent Found", event.name, date("%c", eventTime))
 					foundEvent = true
 					break
@@ -86,18 +90,19 @@ function RCE:repeatEvent()
 				-- First write date from DateTable to the event
 				dateTableToEvent(dateTable, event)
 				log("RepeatEvent Create", event.name, date("%c", eventTime), event)
-				self:createWoWEvent(event)
-				self:openConfirmWindow()
+				createWoWEvent(event)
+				RCE.confirmWindow:open()
 				return
 			end
 
 			-- increase date for next check round
-			self:increaseDate(event.repeatType, dateTable)
+			increaseDate(event.repeatType, dateTable)
 			eventTime = time(dateTable)
 		end
 		-- Finally save the dateTable to the event, so that the next checks ignore already created events
 		dateTableToEvent(dateTable, event)
 		log("RepeatEvent NextDate", event.name, date("%c", eventTime))
 	end
-	self:scheduleAutoModCheck()
+
+	RCE.core:scheduleAutoModCheck()
 end

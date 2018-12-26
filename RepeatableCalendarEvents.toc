@@ -12,10 +12,14 @@ locales/enUS.lua
 locales/deDE.lua
 
 Debug.lua
+RCE.lua
+Class.lua
 Core.lua
+List.lua
 RepeatEvents.lua
 Settings.lua
 AutoMod.lua
 EventsListWindow.lua
 EventWindow.lua
 ConfirmWindow.lua
+WorkQueue.lua
