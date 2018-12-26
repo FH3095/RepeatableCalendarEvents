@@ -1,4 +1,4 @@
-## Interface: 70300
+## Interface: 80100
 ## Title: Repeatable Calendar Events
 ## Notes: Addon to automatically create calendar events
 ## Author: Neoran
