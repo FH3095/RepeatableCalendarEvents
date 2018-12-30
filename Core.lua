@@ -86,7 +86,6 @@ function Core:consoleParseCommand(msg, editbox)
 
 	if cmd ~= nil then
 		if cmd == "check" then -- TEST ONLY
-			RCE.workQueue:clearTasks()
 			C_Calendar.OpenCalendar() -- Normaly we have to wait for the event to return. But this command is a test-only command anyway
 			self:scheduleRepeatCheck(1)
 		elseif cmd == "new" then
@@ -230,6 +229,21 @@ function Core:normalizeDateTable(dateTable)
 	ret.day = dateTable.day
 	ret.hour = dateTable.hour
 	ret.min = dateTable.min
+
+	return ret
+end
+
+function Core:splitStringToArray(array)
+	local ret = {}
+	if array == nil then
+		return ret
+	end
+
+	for m in array:gmatch("%S+") do
+		if m:trim() ~= "" then
+			tinsert(ret, m)
+		end
+	end
 
 	return ret
 end

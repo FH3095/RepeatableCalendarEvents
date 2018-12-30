@@ -5,7 +5,7 @@ local RCE = RepeatableCalendarEvents
 local ConfirmWindow = {}
 RCE.Class:createSingleton("confirmWindow", ConfirmWindow, {})
 
-function ConfirmWindow:open()
+function ConfirmWindow:open(beforeAddFunc)
 	local frame = RCE.gui:Create("Window")
 	frame:SetCallback("OnClose",function(widget) C_Calendar.AddEvent(); RCE.core:scheduleRepeatCheck(); frame:Release() end)
 	frame:SetLayout("Fill")
@@ -17,8 +17,8 @@ function ConfirmWindow:open()
 	local button = RCE.gui:Create("Button")
 	button:SetText(RCE.l.ConfirmButton)
 	button:SetCallback("OnClick", function()
+		beforeAddFunc()
 		C_Calendar.AddEvent()
-		RCE.core:scheduleRepeatCheck()
 		frame:Release()
 	end)
 	frame:AddChild(button)

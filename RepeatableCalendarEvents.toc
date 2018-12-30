@@ -16,10 +16,10 @@ RCE.lua
 Class.lua
 Core.lua
 List.lua
+WorkQueue.lua
 RepeatEvents.lua
 Settings.lua
 AutoMod.lua
 EventsListWindow.lua
 EventWindow.lua
 ConfirmWindow.lua
-WorkQueue.lua

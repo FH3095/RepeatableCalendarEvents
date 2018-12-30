@@ -3,22 +3,7 @@ local log = FH3095Debug.log
 local RCE = RepeatableCalendarEvents
 
 local AutoMod = {}
-RCE.Class:createSingleton("autoMod", AutoMod, {queue = RCE.List.new(), currentEvent = nil, autoModChars = nil})
-
-local function splitStringToArray(array)
-	local ret = {}
-	if array == nil then
-		return ret
-	end
-
-	for m in array:gmatch("%S+") do
-		if m:trim() ~= "" then
-			tinsert(ret, m)
-		end
-	end
-
-	return ret
-end
+RCE.Class:createSingleton("autoMod", AutoMod, {queue = RCE.List.new(), currentEvent = nil, autoModChars = nil, workQueue = RCE.WorkQueue.new()})
 
 function AutoMod:enqueueNextEvent()
 	if self.queue:isEmpty() then
@@ -30,8 +15,8 @@ function AutoMod:enqueueNextEvent()
 	RCE.core:setCalendarMonthToDate(nextEvent.year, nextEvent.month)
 	log("CheckAutoMod: Enqueue Event", nextEvent.year, nextEvent.month, nextEvent.day, nextEvent.index)
 	self.currentEvent = nextEvent
-	RCE.workQueue:addTask(function() C_Calendar.OpenEvent(0, nextEvent.day, nextEvent.index) end, nil, 1)
-	RCE.workQueue:addTask(function() self:parseEvent() end, "CALENDAR_OPEN_EVENT")
+	self.workQueue:addTask(function() C_Calendar.OpenEvent(0, nextEvent.day, nextEvent.index) end, nil, 1)
+	self.workQueue:addTask(function() self:parseEvent() end, "CALENDAR_OPEN_EVENT")
 end
 
 function AutoMod:parseEvent()
@@ -61,11 +46,11 @@ function AutoMod:parseEvent()
 	end
 	C_Calendar.CloseEvent()
 
-	RCE.workQueue:addTask(function() self:enqueueNextEvent() end, nil, 1)
+	self.workQueue:addTask(function() self:enqueueNextEvent() end, nil, 1)
 end
 
 function AutoMod:execute()
-	self.autoModChars = splitStringToArray(RCE.db.profile.autoModNames)
+	self.autoModChars = RCE.core:splitStringToArray(RCE.db.profile.autoModNames)
 	log("CheckAutoMod", self.autoModChars)
 
 	local dateTable = date("*t")

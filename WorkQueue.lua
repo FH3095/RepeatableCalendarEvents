@@ -3,13 +3,17 @@ local log = FH3095Debug.log
 local RCE = RepeatableCalendarEvents
 
 local WQ = {}
-RCE.Class:createSingleton("workQueue", WQ, {runningTimer = nil, queue = RCE.List.new()})
+local function newWorkQueue()
+	return RCE.Class:createObject(WQ, {runningTimer = nil, queue = RCE.List.new()})
+end
+RCE.Class:createClass("WorkQueue", WQ, newWorkQueue)
 
 function WQ:prepareNextTask()
 	local elem = self.queue:peek()
 	if elem.event then
+		log("WorkQueue:RegisterForEvent", elem.event, elem.delay)
 		RCE.events:RegisterEvent(elem.event, function()
-			log("WorkQueue:RegisterForEvent", elem.event)
+			log("WorkQueue:EventFired", elem.event, elem.delay)
 			RCE.events:UnregisterEvent(elem.event)
 			self.runningTimer = RCE.timers:ScheduleTimer(function() self:runTask() end, elem.delay)
 		end)
@@ -33,13 +37,10 @@ function WQ:addTask(funcToCall, waitForEvent, delay)
 end
 
 function WQ:runTask()
-	if self.queue:isEmpty() then
-		return -- ClearTasks was called between prepareNextTask and runTask
-	end
-
-	local elem = self.queue:pop()
+	local elem = self.queue:peek()
 	log("WorkQueue:runTask", elem.event, elem.delay)
 	elem.func()
+	self.queue:pop() -- if elem.func() adds elements to the queue, we have to behave as if the queue is not empty. So remove queue element AFTER elem.func()
 
 	if not self.queue:isEmpty() then
 		self:prepareNextTask()
@@ -62,6 +63,6 @@ function WQ:clearTasks()
 	if elem.event then
 		RCE.events:UnregisterEvent(elem.event)
 	end
-	
+
 	self.queue:clear()
 end

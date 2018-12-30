@@ -41,6 +41,7 @@ local function constructDefaultEvent()
 		repeatType = 1,
 		locked = false,
 		guildEvent = false,
+		autoInvite = "",
 		customGuildInvite = false,
 		guildInvMinLevel = 1,
 		guildInvMaxLevel = RCE.consts.CHAR_MAX_LEVEL,
@@ -142,6 +143,10 @@ function EventWindow:open(eventId)
 	repeatType:SetList(repeatTypes)
 	repeatType:SetWidth(100)
 	repeatType:SetValue(event.repeatType)
+
+	local autoInvite = self:createElement(frame, "MultiLineEditBox", "EventAutoInvite", event.autoInvite)
+	autoInvite:SetFullWidth(true)
+	autoInvite:DisableButton(true)
 
 	local locked = self:createElement(frame, "CheckBox", "EventLocked", event.locked)
 
@@ -290,6 +295,7 @@ function EventWindow:save(frame, eventId)
 	event.year = tonumber(childs.EventYear:GetText())
 	event.repeatType = tonumber(childs.EventRepeatType:GetValue())
 	event.locked = childs.EventLocked:GetValue() and true or false
+	event.autoInvite = childs.EventAutoInvite:GetText()
 	event.guildEvent = childs.EventTypeGuild:GetValue() and true or false
 	event.customGuildInvite = childs.EventCustomGuildInvite:GetValue() and true or false
 	event.guildInvMinLevel = tonumber(childs.EventGuildInvMinLevel:GetValue())

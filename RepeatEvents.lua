@@ -3,7 +3,7 @@ local log = FH3095Debug.log
 local RCE = RepeatableCalendarEvents
 
 local EventRepeater = {}
-RCE.Class:createSingleton("eventRepeater", EventRepeater, {})
+RCE.Class:createSingleton("eventRepeater", EventRepeater, {workQueue = RCE.WorkQueue.new()})
 
 local function increaseDate(repeatType, dateTable)
 	if repeatType == RCE.consts.REPEAT_TYPES.WEEKLY then
@@ -15,6 +15,8 @@ local function increaseDate(repeatType, dateTable)
 	else
 		error("Unknown repeattype " .. repeatType)
 	end
+	
+	return RCE.core:normalizeDateTable(dateTable)
 end
 
 local function dateTableToEvent(dateTable, event)
@@ -51,6 +53,20 @@ local function createWoWEvent(event)
 	end
 end
 
+local function searchForEvent(dateTable, eventTitle)
+	log("Search for event", eventTitle, dateTable)
+	RCE.core:setCalendarMonthToDate(dateTable)
+
+	local numEvents = C_Calendar.GetNumDayEvents(0, dateTable.day)
+	for i=1,numEvents do
+		local otherEvent = C_Calendar.GetDayEvent(0, dateTable.day, i)
+		if (otherEvent.calendarType == "GUILD_EVENT" or otherEvent.calendarType == "PLAYER") and otherEvent.title == eventTitle then
+			return i
+		end
+	end
+	return -1
+end
+
 function EventRepeater:execute()
 	log("EventRepeater:execute")
 
@@ -63,40 +79,55 @@ function EventRepeater:execute()
 
 		while eventTime < currentTime do
 			-- increase eventTime until it reaches today
-			increaseDate(event.repeatType, dateTable)
+			dateTable = increaseDate(event.repeatType, dateTable)
 			eventTime = time(dateTable)
 			log("EventRepeater added to", date("%c", eventTime))
 		end
 
 		while eventTime < maxCreateTime do
 			log("RepeatEvent CheckFor", event.name, date("%c", eventTime))
-			dateTable = RCE.core:normalizeDateTable(dateTable)
-			RCE.core:setCalendarMonthToDate(dateTable)
+			local eventIndex = searchForEvent(dateTable, event.title)
 
-			-- Loop through events of that day to see if event already exists
-			local numEvents = C_Calendar.GetNumDayEvents(0, dateTable.day)
-			local foundEvent = false
-			for i=1,numEvents do
-				local otherEvent = C_Calendar.GetDayEvent(0, dateTable.day, i)
-				if (otherEvent.calendarType == "GUILD_EVENT" or otherEvent.calendarType == "PLAYER") and otherEvent.title == event.title then
-					log("RepeatEvent Found", event.name, date("%c", eventTime))
-					foundEvent = true
-					break
-				end
-			end
-
-			-- Create event if not found
-			if not foundEvent then
+			if eventIndex >= 0 then
+				log("RepeatEvent Found", event.name, date("%c", eventTime))
+			else
+				-- Create event if not found
 				-- First write date from DateTable to the event
 				dateTableToEvent(dateTable, event)
+
+				local beforeAddNewEventFunc = function()
+					local afterNewEventCreatedFunc = function()
+						local eventIndex = searchForEvent(dateTable, event.title)
+						if eventIndex < 0 then
+							error("Cant find just created event " .. event.title .. " on " .. date("%c", eventTime))
+						end
+
+						local invitees = RCE.core:splitStringToArray(event.autoInvite)
+						if table.getn(invitees) > 0 then
+							log("RepeatEvent AutoInvite", event.name, date("%c", eventTime), invitees)
+							local waitForEvent = "CALENDAR_OPEN_EVENT"
+							self.workQueue:addTask(function() C_Calendar.CloseEvent(); C_Calendar.OpenEvent(0, dateTable.day, eventIndex) end, nil, 1)
+							for _,v in pairs(invitees) do
+								self.workQueue:addTask(function() log("RepeatEvent invite", v, event); C_Calendar.EventInvite(v) end, waitForEvent, RCE.consts.INVITE_INTERVAL)
+								waitForEvent = nil
+							end
+							self.workQueue:addTask(function() C_Calendar.CloseEvent() end, nil, RCE.consts.INVITE_INTERVAL)
+						end
+
+						self.workQueue:addTask(function() RCE.eventRepeater:execute() end, nil, RCE.consts.REPEAT_CHECK_INTERVAL)
+					end
+
+					self.workQueue:addTask(function() afterNewEventCreatedFunc() end, "CALENDAR_NEW_EVENT", 1)
+				end
+
 				log("RepeatEvent Create", event.name, date("%c", eventTime), event)
 				createWoWEvent(event)
-				RCE.confirmWindow:open()
+				RCE.confirmWindow:open(beforeAddNewEventFunc)
 				return
 			end
 
 			-- increase date for next check round
-			increaseDate(event.repeatType, dateTable)
+			dateTable = increaseDate(event.repeatType, dateTable)
 			eventTime = time(dateTable)
 		end
 		-- Finally save the dateTable to the event, so that the next checks ignore already created events

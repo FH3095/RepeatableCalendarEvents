@@ -28,6 +28,7 @@ RCE.consts.REPEAT_TYPES = {
 }
 RCE.consts.WAIT_FOR_PLAYER_ALIVE = 60
 RCE.consts.REPEAT_CHECK_INTERVAL = 11
+RCE.consts.INVITE_INTERVAL = 11
 RCE.consts.ADDON_NAME_COLORED = RCE.consts.COLORS.HIGHLIGHT .. RCE.consts.ADDON_NAME .. "|r"
 
 function RCE:OnEnable()
@@ -49,12 +50,13 @@ function RCE:OnInitialize()
 	self.settings:createOptions()
 
 	-- On login, ask for calendar at PlayerAlive
+	local workQueue = self.WorkQueue.new()
 	local waitExpireTimer = self.timers:ScheduleTimer(function()
 		log("Wait for PLAYER_ALIVE expired, unregister events")
-		self.workQueue:clearTasks()
+		workQueue:clearTasks()
 	end, self.consts.WAIT_FOR_PLAYER_ALIVE)
-	self.workQueue:addTask(function() self.timers:CancelTimer(waitExpireTimer) C_Calendar.OpenCalendar() end, "PLAYER_ALIVE")
-	self.workQueue:addTask(function() self.timers:CancelTimer(waitExpireTimer) self.core:scheduleRepeatCheck() end, "CALENDAR_UPDATE_EVENT_LIST")
+	workQueue:addTask(function() self.timers:CancelTimer(waitExpireTimer) C_Calendar.OpenCalendar() end, "PLAYER_ALIVE")
+	workQueue:addTask(function() self.timers:CancelTimer(waitExpireTimer) self.core:scheduleRepeatCheck() end, "CALENDAR_UPDATE_EVENT_LIST")
 
 
 	self.console = LibStub("AceConsole-3.0")
