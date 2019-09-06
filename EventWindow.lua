@@ -63,7 +63,7 @@ function EventWindow:open(eventId)
 	log("OpenEventWindow", eventId, event)
 
 	local frame = RCE.gui:Create("Window")
-	frame:SetCallback("OnClose",function(widget) frame:Release() end)
+	--frame:SetCallback("OnClose",function(widget) frame:Release() end)
 	frame:SetLayout("Flow")
 	frame:EnableResize(true)
 	frame:SetTitle(L.EventWindowName)

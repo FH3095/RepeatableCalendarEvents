@@ -11,7 +11,7 @@ function EventListWindow:open()
 	local L = RCE.l
 
 	local frame = RCE.gui:Create("Window")
-	frame:SetCallback("OnClose",function(widget) frame:Release() end)
+	--frame:SetCallback("OnClose",function(widget) frame:Release() end)
 	frame:SetLayout("Fill")
 	frame:EnableResize(true)
 	frame:SetTitle(L.EventListWindowName)
