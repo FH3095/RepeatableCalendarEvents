@@ -17,7 +17,7 @@ RCE.consts.COLORS = {
 RCE.consts.EVENT_TYPES = {
 	RAID = Enum.CalendarEventType.Raid,
 	DUNGEON = Enum.CalendarEventType.Dungeon,
-	PVP = Enum.CalendarEventType.Pvp,
+	PVP = Enum.CalendarEventType.PvP,
 	MEETING = Enum.CalendarEventType.Meeting,
 	OTHER = Enum.CalendarEventType.Other,
 }
