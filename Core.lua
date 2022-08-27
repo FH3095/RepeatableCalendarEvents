@@ -53,6 +53,9 @@ local function buildCache(textureInfos)
 			}
 		else
 			result[mapId].difficulties[difficultyId] = { difficulty = difficultyId, name = difficultyName, index = index}
+			if result[mapId].texture == nil and texture ~= nil then
+				result[mapId].texture = texture
+			end
 		end
 	end
 
