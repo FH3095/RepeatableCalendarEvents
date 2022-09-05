@@ -1,6 +1,7 @@
 name: Package and upload addon
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
