@@ -1,8 +1,8 @@
-## Interface: 80100
+## Interface: 90207
 ## Title: Repeatable Calendar Events
 ## Notes: Addon to automatically create calendar events
 ## Author: Neoran
-## Version: 1.0.0
+## Version: 1.0.1
 ## X-Curse-Project-ID: 271544
 ## SavedVariables: RepeatableCalendarEventsDB
 
