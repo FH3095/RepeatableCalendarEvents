@@ -1,9 +1,8 @@
-
 local log = FH3095Debug.log
 local RCE = RepeatableCalendarEvents
 
 local EventListWindow = {}
-RCE.Class:createSingleton("eventsListWindow", EventListWindow, {})
+RCE.eventsListWindow = EventListWindow
 
 
 function EventListWindow:open()
@@ -23,7 +22,7 @@ function EventListWindow:open()
 
 
 	local events = RCE.db.profile.events;
-	for key,event in pairs(events) do
+	for key, event in pairs(events) do
 		local editButton = RCE.gui:Create("Button")
 		editButton:SetText(event.name)
 		editButton:SetRelativeWidth(0.8)
@@ -41,6 +40,12 @@ function EventListWindow:open()
 	newButton:SetFullWidth(true)
 	newButton:SetCallback("OnClick", function() RCE.eventWindow:open(nil); frame:Release() end)
 	scroll:AddChild(newButton)
+
+	local scheduleCheckButton = RCE.gui:Create("Button")
+	scheduleCheckButton:SetText(L.ScheduleCheckButton)
+	scheduleCheckButton:SetFullWidth(true)
+	scheduleCheckButton:SetCallback("OnClick", function() RCE.core:scheduleRepeatCheck(); frame:Release() end)
+	scroll:AddChild(scheduleCheckButton)
 
 	scroll:ResumeLayout()
 	scroll:DoLayout()

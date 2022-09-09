@@ -1,9 +1,8 @@
-
 local log = FH3095Debug.log
 local RCE = RepeatableCalendarEvents
 
 local Settings = {}
-RCE.Class:createSingleton("settings", Settings, {})
+RCE.settings = Settings
 
 function Settings:createOptions()
 	local optionsTable = {
@@ -18,21 +17,21 @@ function Settings:createOptions()
 				get = "GetBasicOption",
 				args = {
 					eventsInFuture = {
-						type	= "range",
-						name	= RCE.l.EventsInFutureName,
-						desc	= RCE.l.EventsInFutureDesc,
-						width	= "full",
-						min		= 1,
-						max		= 365,
-						softMax	= 32,
-						step	= 1,
+						type    = "range",
+						name    = RCE.l.EventsInFutureName,
+						desc    = RCE.l.EventsInFutureDesc,
+						width   = "full",
+						min     = 1,
+						max     = 365,
+						softMax = 32,
+						step    = 1,
 					},
 					autoModNames = {
-						type		= "input",
-						name		= RCE.l.AutoModNamesName,
-						desc		= RCE.l.AutoModNamesDesc,
-						multiline	= true,
-						width		= "full",
+						type      = "input",
+						name      = RCE.l.AutoModNamesName,
+						desc      = RCE.l.AutoModNamesDesc,
+						multiline = true,
+						width     = "full",
 					}
 				}
 			},
@@ -42,7 +41,6 @@ function Settings:createOptions()
 	LibStub("AceConfig-3.0"):RegisterOptionsTable(RCE.consts.ADDON_NAME, optionsTable)
 	LibStub("AceConfigDialog-3.0"):AddToBlizOptions(RCE.consts.ADDON_NAME)
 end
-
 
 function Settings:SetBasicOption(info, value)
 	log("Set option", info[#info], value)

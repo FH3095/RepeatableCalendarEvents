@@ -1,13 +1,12 @@
-
 local log = FH3095Debug.log
 local RCE = RepeatableCalendarEvents
 
 local EventWindow = {}
-RCE.Class:createSingleton("eventWindow", EventWindow, {})
+RCE.eventWindow = EventWindow
 
 local function buildRaidOrDungeonDropdownList(cache)
 	local ret = {}
-	for i=1,#cache do
+	for i = 1, #cache do
 		ret[i] = cache[i].expansionName .. " - " .. cache[i].title
 	end
 
@@ -18,7 +17,7 @@ local function builDifficultyDropdownList(cache, index)
 	local ret = {}
 	local difficulties = cache[index].difficulties
 
-	for i=1,#difficulties do
+	for i = 1, #difficulties do
 		ret[i] = difficulties[i].name
 	end
 
@@ -26,6 +25,7 @@ local function builDifficultyDropdownList(cache, index)
 end
 
 local function constructDefaultEvent()
+	local today = date("*t")
 	local ret = {
 		name = "",
 		title = "",
@@ -35,17 +35,14 @@ local function constructDefaultEvent()
 		difficulty = 1,
 		hour = 0,
 		minute = 0,
-		day = 1,
-		month = 1,
-		year = 1999,
-		repeatType = 1,
+		day = today.day,
+		month = today.month,
+		year = today.year,
+		repeatType = RCE.consts.REPEAT_TYPES.DAILY,
+		repeatStep = 7,
 		locked = false,
 		guildEvent = false,
 		autoInvite = "",
-		customGuildInvite = false,
-		guildInvMinLevel = 1,
-		guildInvMaxLevel = RCE.consts.CHAR_MAX_LEVEL,
-		guildInvRank = 1,
 	}
 
 	return ret
@@ -80,11 +77,11 @@ function EventWindow:open(eventId)
 
 	local type = self:createElement(frame, "Dropdown", "EventType")
 	local types = {
-		[Const.EVENT_TYPES.RAID]=L["EventTypeRaid"],
-		[Const.EVENT_TYPES.DUNGEON]=L["EventTypeDungeon"],
-		[Const.EVENT_TYPES.PVP]=L["EventTypePvP"],
-		[Const.EVENT_TYPES.MEETING]=L["EventTypeMeeting"],
-		[Const.EVENT_TYPES.OTHER]=L["EventTypeOther"],
+		[Const.EVENT_TYPES.RAID] = L["EventTypeRaid"],
+		[Const.EVENT_TYPES.DUNGEON] = L["EventTypeDungeon"],
+		[Const.EVENT_TYPES.PVP] = L["EventTypePvP"],
+		[Const.EVENT_TYPES.MEETING] = L["EventTypeMeeting"],
+		[Const.EVENT_TYPES.OTHER] = L["EventTypeOther"],
 	}
 	type:SetList(types)
 	type:SetRelativeWidth(0.5)
@@ -106,43 +103,47 @@ function EventWindow:open(eventId)
 
 	local hour = self:createElement(frame, "Dropdown", "EventHour")
 	local hours = {}
-	for i=0,23 do
+	for i = 0, 23 do
 		hours[i] = format("%02u", i)
 	end
 	hour:SetList(hours)
-	hour:SetWidth(100)
+	hour:SetRelativeWidth(0.2)
 	hour:SetValue(event.hour)
 
 	local minute = self:createElement(frame, "Dropdown", "EventMinute")
 	local minutes = {}
-	for i=0,55,5 do
+	for i = 0, 55, 5 do
 		minutes[i] = format("%02u", i)
 	end
 	minute:SetList(minutes)
-	minute:SetWidth(100)
+	minute:SetRelativeWidth(0.2)
 	minute:SetValue(event.minute)
 
 	local day = self:createElement(frame, "EditBox", "EventDay", event.day)
-	day:SetWidth(100)
+	day:SetRelativeWidth(0.2)
 	day:DisableButton(true)
 
 	local month = self:createElement(frame, "EditBox", "EventMonth", event.month)
-	month:SetWidth(100)
+	month:SetRelativeWidth(0.2)
 	month:DisableButton(true)
 
 	local year = self:createElement(frame, "EditBox", "EventYear", event.year)
-	year:SetWidth(100)
+	year:SetRelativeWidth(0.2)
 	year:DisableButton(true)
 
 	local repeatType = self:createElement(frame, "Dropdown", "EventRepeatType")
 	local repeatTypes = {
-		[Const.REPEAT_TYPES.WEEKLY] = L.EventRepeatWeekly,
+		[Const.REPEAT_TYPES.DAILY] = L.EventRepeatDaily,
 		[Const.REPEAT_TYPES.MONTHLY] = L.EventRepeatMonthly,
 		[Const.REPEAT_TYPES.YEARLY] = L.EventRepeatYearly,
 	}
 	repeatType:SetList(repeatTypes)
 	repeatType:SetWidth(100)
 	repeatType:SetValue(event.repeatType)
+
+	local repeatStep = self:createElement(frame, "EditBox", "EventRepeatStep", event.repeatStep)
+	repeatStep:SetWidth(100)
+	repeatStep:DisableButton(true)
 
 	local autoInvite = self:createElement(frame, "MultiLineEditBox", "EventAutoInvite", event.autoInvite)
 	autoInvite:SetFullWidth(true)
@@ -151,17 +152,6 @@ function EventWindow:open(eventId)
 	local locked = self:createElement(frame, "CheckBox", "EventLocked", event.locked)
 
 	local guildEvent = self:createElement(frame, "CheckBox", "EventTypeGuild", event.guildEvent)
-
-	local customGuildInvite = self:createElement(frame, "CheckBox", "EventCustomGuildInvite", event.customGuildInvite)
-
-	local guildInvMinLevel = self:createElement(frame, "Slider", "EventGuildInvMinLevel", event.guildInvMinLevel)
-	guildInvMinLevel:SetSliderValues(1, Const.CHAR_MAX_LEVEL, 1)
-
-	local guildInvMaxLevel = self:createElement(frame, "Slider", "EventGuildInvMaxLevel", event.guildInvMaxLevel)
-	guildInvMaxLevel:SetSliderValues(1, Const.CHAR_MAX_LEVEL, 1)
-
-	local guildInvRank = self:createElement(frame, "Slider", "EventGuildInvRank", event.guildInvRank)
-	guildInvRank:SetSliderValues(1, IsInGuild() and GuildControlGetNumRanks() or 1, 1)
 
 	local saveButton = self:createElement(frame, "Button", "SaveEventButton")
 	saveButton:SetFullWidth(true)
@@ -178,7 +168,6 @@ function EventWindow:open(eventId)
 	self:registerForChangeToCheckOtherFields(frame, type, "Dropdown")
 	self:registerForChangeToCheckOtherFields(frame, raidOrDungeon, "Dropdown")
 	self:registerForChangeToCheckOtherFields(frame, guildEvent, "CheckBox")
-	self:registerForChangeToCheckOtherFields(frame, customGuildInvite, "CheckBox")
 	self:checkFields(frame)
 end
 
@@ -201,11 +190,11 @@ function EventWindow:createElement(frame, type, name, value)
 	if type == "EditBox" or type == "MultiLineEditBox" then
 		checkValue()
 		element:SetText(value)
-	elseif type == "CheckBox" or type =="Slider" then
+	elseif type == "CheckBox" or type == "Slider" then
 		checkValue()
 		element:SetValue(value)
 	elseif type == "Button" or type == "Dropdown" then
-	-- Do nothing for buttons and cant set for dropdowns before options are set
+		-- Do nothing for buttons and cant set for dropdowns before options are set
 	else
 		error("Cant handle value for element " .. name .. " of type " .. type)
 	end
@@ -224,7 +213,8 @@ end
 
 function EventWindow:checkFields(frame)
 	local childs = frame:GetUserData("Childs")
-	if childs.EventType:GetValue() == RCE.consts.EVENT_TYPES.RAID or childs.EventType:GetValue() == RCE.consts.EVENT_TYPES.DUNGEON then
+	if childs.EventType:GetValue() == RCE.consts.EVENT_TYPES.RAID or
+		childs.EventType:GetValue() == RCE.consts.EVENT_TYPES.DUNGEON then
 		childs.EventRaidOrDungeon:SetDisabled(false)
 		childs.EventDifficulty:SetDisabled(false)
 
@@ -244,22 +234,6 @@ function EventWindow:checkFields(frame)
 		childs.EventTypeGuild:SetDisabled(false)
 	else
 		childs.EventTypeGuild:SetDisabled(true)
-	end
-
-	if not childs.EventTypeGuild:GetValue() and IsInGuild() then
-		childs.EventCustomGuildInvite:SetDisabled(false)
-	else
-		childs.EventCustomGuildInvite:SetDisabled(true)
-	end
-
-	if childs.EventCustomGuildInvite:GetValue() and not childs.EventTypeGuild:GetValue() and IsInGuild() then
-		childs.EventGuildInvMinLevel:SetDisabled(false)
-		childs.EventGuildInvMaxLevel:SetDisabled(false)
-		childs.EventGuildInvRank:SetDisabled(false)
-	else
-		childs.EventGuildInvMinLevel:SetDisabled(true)
-		childs.EventGuildInvMaxLevel:SetDisabled(true)
-		childs.EventGuildInvRank:SetDisabled(true)
 	end
 
 	frame:DoLayout()
@@ -294,13 +268,10 @@ function EventWindow:save(frame, eventId)
 	event.month = tonumber(childs.EventMonth:GetText())
 	event.year = tonumber(childs.EventYear:GetText())
 	event.repeatType = tonumber(childs.EventRepeatType:GetValue())
+	event.repeatStep = tonumber(childs.EventRepeatStep:GetText())
 	event.locked = childs.EventLocked:GetValue() and true or false
 	event.autoInvite = childs.EventAutoInvite:GetText()
 	event.guildEvent = childs.EventTypeGuild:GetValue() and true or false
-	event.customGuildInvite = childs.EventCustomGuildInvite:GetValue() and true or false
-	event.guildInvMinLevel = tonumber(childs.EventGuildInvMinLevel:GetValue())
-	event.guildInvMaxLevel = tonumber(childs.EventGuildInvMaxLevel:GetValue())
-	event.guildInvRank = tonumber(childs.EventGuildInvRank:GetValue())
 
 	if not RCE.core:validateEvent(event) then
 		return false
@@ -319,10 +290,9 @@ function EventWindow:save(frame, eventId)
 		elseif evt2 == nil then
 			return true
 		else
-			return strcmputf8i(tostring(evt1.name),tostring(evt2.name)) < 0
+			return strcmputf8i(tostring(evt1.name), tostring(evt2.name)) < 0
 		end
 	end
 	sort(RCE.db.profile.events, sortFunc)
-	RCE.core:scheduleRepeatCheck(1)
 	return true
 end

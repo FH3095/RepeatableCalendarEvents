@@ -1,0 +1,8 @@
+{
+    "Lua.runtime.version": "Lua 5.1",
+    "Lua.diagnostics.globals": [
+        "Calendar_Show",
+        "Calendar_LoadUI",
+        "Calendar_Hide"
+    ]
+}

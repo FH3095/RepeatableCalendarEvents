@@ -1,9 +1,8 @@
-
 local log = FH3095Debug.log
 local RCE = RepeatableCalendarEvents
 
 local AutoMod = {}
-RCE.Class:createSingleton("autoMod", AutoMod, {queue = RCE.List.new(), currentEvent = nil, autoModChars = nil, workQueue = RCE.WorkQueue.new()})
+--RCE.Class:createSingleton("autoMod", AutoMod, {queue = RCE.List.new(), currentEvent = nil, autoModChars = nil, workQueue = RCE.WorkQueue.new()})
 
 function AutoMod:enqueueNextEvent()
 	if self.queue:isEmpty() then
@@ -28,9 +27,10 @@ function AutoMod:parseEvent()
 	log("AutoMod.parseEvent")
 	if C_Calendar.EventCanEdit() then
 		local toCheckEvent = C_Calendar.GetEventInfo()
-		log("AutoMod.parseEvent: Check event", toCheckEvent.title, toCheckEvent.time.monthDay, toCheckEvent.time.month, toCheckEvent.time.year, toCheckEvent.time.hour, toCheckEvent.time.minute)
+		log("AutoMod.parseEvent: Check event", toCheckEvent.title, toCheckEvent.time.monthDay, toCheckEvent.time.month,
+			toCheckEvent.time.year, toCheckEvent.time.hour, toCheckEvent.time.minute)
 		local numInvitees = C_Calendar.GetNumInvites()
-		for inviteeIndex=1,numInvitees do
+		for inviteeIndex = 1, numInvitees do
 			local inviteInfo = C_Calendar.EventGetInvite(inviteeIndex)
 			local charName = inviteInfo.name
 			if charName ~= nil then
@@ -55,13 +55,14 @@ function AutoMod:execute()
 
 	local dateTable = date("*t")
 
-	for futureDays=1,RCE.db.profile.eventsInFuture do
+	for futureDays = 1, RCE.db.profile.eventsInFuture do
 		RCE.core:setCalendarMonthToDate(dateTable)
 		local numEvents = C_Calendar.GetNumDayEvents(0, dateTable.day)
-		for eventIndex=1,numEvents do
+		for eventIndex = 1, numEvents do
 			local otherEvent = C_Calendar.GetDayEvent(0, dateTable.day, eventIndex)
-			if otherEvent.modStatus == "CREATOR" and (otherEvent.calendarType == "GUILD_EVENT" or otherEvent.calendarType == "PLAYER") then
-				local event = {day = dateTable.day, month = dateTable.month, year = dateTable.year, index = eventIndex}
+			if otherEvent.modStatus == "CREATOR" and
+				(otherEvent.calendarType == "GUILD_EVENT" or otherEvent.calendarType == "PLAYER") then
+				local event = { day = dateTable.day, month = dateTable.month, year = dateTable.year, index = eventIndex }
 				self.queue:push(event)
 			end
 		end

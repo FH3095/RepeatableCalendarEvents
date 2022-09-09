@@ -1,4 +1,3 @@
-
 -- TODO:
 -- - AutoMod für Events
 -- - Custom-Einlade-Listen für Events (Gilde und nicht-Gilde)
@@ -7,13 +6,13 @@ local log = FH3095Debug.log
 local RCE = RepeatableCalendarEvents
 
 local Core = {}
-RCE.Class:createSingleton("core", Core, {})
+RCE.core = Core
 
 local function buildCache(textureInfos)
-	local sortDifficulties = function(a,b)
+	local sortDifficulties = function(a, b)
 		return a.difficulty < b.difficulty
 	end
-	local sortEntries = function(a,b)
+	local sortEntries = function(a, b)
 		if a.expansion ~= b.expansion then
 			return a.expansion > b.expansion
 		end
@@ -22,7 +21,7 @@ local function buildCache(textureInfos)
 	local result = {}
 
 	local index = 0
-	for _,entry in pairs(textureInfos) do
+	for _, entry in pairs(textureInfos) do
 		index = index + 1
 		local title = entry.title
 		local texture = entry.iconTexture
@@ -39,7 +38,7 @@ local function buildCache(textureInfos)
 			if result[mapId] ~= nil then
 				difficulties = result[mapId].difficulties
 			end
-			difficulties[difficultyId] = { difficulty = difficultyId, name = difficultyName, index = index}
+			difficulties[difficultyId] = { difficulty = difficultyId, name = difficultyName, index = index }
 
 			result[mapId] = {
 				title = title,
@@ -52,7 +51,7 @@ local function buildCache(textureInfos)
 				difficulties = difficulties,
 			}
 		else
-			result[mapId].difficulties[difficultyId] = { difficulty = difficultyId, name = difficultyName, index = index}
+			result[mapId].difficulties[difficultyId] = { difficulty = difficultyId, name = difficultyName, index = index }
 			if result[mapId].texture == nil and texture ~= nil then
 				result[mapId].texture = texture
 			end
@@ -61,10 +60,10 @@ local function buildCache(textureInfos)
 
 	local sortedResult = {}
 	-- By purpose we drop the mapid-information and difficulty-id-key here. We dont need them any longer and they prevent sorting
-	for _,v in pairs(result) do
+	for _, v in pairs(result) do
 		local difficulties = v.difficulties
 		v.difficulties = {}
-		for _,v2 in pairs(difficulties) do
+		for _, v2 in pairs(difficulties) do
 			tinsert(v.difficulties, v2)
 		end
 		sort(v.difficulties, sortDifficulties)
@@ -88,9 +87,8 @@ function Core:consoleParseCommand(msg, editbox)
 	local cmd, nextpos = RCE.console:GetArgs(msg)
 
 	if cmd ~= nil then
-		if cmd == "check" then -- TEST ONLY
-			C_Calendar.OpenCalendar() -- Normaly we have to wait for the event to return. But this command is a test-only command anyway
-			self:scheduleRepeatCheck(1)
+		if cmd == "check" then
+			self:scheduleRepeatCheck()
 		elseif cmd == "new" then
 			RCE.eventWindow:open()
 		else
@@ -161,7 +159,7 @@ function Core:validateEvent(event)
 		self:printError(L.ErrorTitleEmpty)
 		return false
 	end
-	if (event.type==RCE.consts.EVENT_TYPES.RAID or event.type==RCE.consts.EVENT_TYPES.DUNGEON) then
+	if (event.type == RCE.consts.EVENT_TYPES.RAID or event.type == RCE.consts.EVENT_TYPES.DUNGEON) then
 		local cache = self:getCacheForEventType(event.type)
 		if empty(event.raidOrDungeon) or event.raidOrDungeon <= 0 or event.raidOrDungeon > #cache then
 			self:printError(L.ErrorNoRaidOrDungeonChoosen)
@@ -187,18 +185,17 @@ function Core:validateEvent(event)
 	return true
 end
 
-function Core:scheduleRepeatCheck(secondsToCheck)
-	if self.repeatCheckTimer ~= nil and RCE.timers:TimeLeft(self.repeatCheckTimer) > 0 then
-		return -- Timer already running
-	end
-
-	local seconds = secondsToCheck
-	if seconds == nil then
-		seconds = RCE.consts.REPEAT_CHECK_INTERVAL
-	end
-	log("ScheduleRepeatCheck", seconds)
-
-	self.repeatCheckTimer = RCE.timers:ScheduleTimer(function() RCE.eventRepeater:execute() end, seconds)
+function Core:scheduleRepeatCheck()
+	log("ScheduleRepeatCheck")
+	-- We have to use Calendar_Show() which shows the calendar ui. Without the ui, we cant open an event to invite people
+	RCE.work:add("Open Calendar", 1,
+		function()
+			if not Calendar_Show then
+				Calendar_LoadUI()
+			end
+			Calendar_Show()
+		end)
+	RCE.work:add("Run first repeat check", RCE.consts.WORK_CONTINUE_MANUALLY, function() RCE.eventRepeater:execute() end)
 end
 
 function Core:scheduleAutoModCheck()

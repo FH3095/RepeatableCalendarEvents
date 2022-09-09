@@ -16,7 +16,7 @@ RCE.lua
 Class.lua
 Core.lua
 List.lua
-WorkQueue.lua
+WorkList.lua
 RepeatEvents.lua
 Settings.lua
 AutoMod.lua

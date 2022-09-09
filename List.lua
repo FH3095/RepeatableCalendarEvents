@@ -1,11 +1,11 @@
-
 local RCE = RepeatableCalendarEvents
 
 local List = {}
 local function newList()
-	return RCE.Class:createObject(List, {first = 0, last = -1})
+	return RCE.Class:createObject(List, { first = 0, last = -1 })
 end
-RCE.Class:createClass("List", List, newList)
+
+RCE.Class:createClass("List", newList)
 
 
 function List:push(value)
@@ -38,4 +38,9 @@ function List:clear()
 	while not self:isEmpty() do
 		self:pop()
 	end
+end
+
+function List:peekLast()
+	if self:isEmpty() then error("list is empty") end
+	return self[self.last]
 end

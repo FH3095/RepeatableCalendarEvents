@@ -1,27 +1,21 @@
-
 local RCE = RepeatableCalendarEvents
+
 local ClassHelper = {}
+local classRegistry = {}
 RCE.Class = ClassHelper
+RCE.classes = classRegistry
 
-function ClassHelper:createClass(className, class, newFunction)
-	RCE[className] = {}
-	RCE[className].new = newFunction
-	class.__index = class
-	return RCE[className]
-end
-
-function ClassHelper:createSingleton(className, class, initData)
-	RCE[className] = {}
-	class.__index = class
-	local instance = self:createObject(class, initData)
-	RCE[className] = instance
-	return instance
+function ClassHelper:createClass(className, newFunction)
+	classRegistry[className] = newFunction
 end
 
 function ClassHelper:createObject(class, initData)
+	if class == nil then
+		error("Missing class")
+	end
 	if initData == nil then
 		initData = {}
 	end
-	setmetatable(initData, class)
+	setmetatable(initData, { __index = class })
 	return initData
 end
