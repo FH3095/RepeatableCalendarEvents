@@ -161,6 +161,9 @@ function Core:validateEvent(event)
 	end
 	if (event.type == RCE.consts.EVENT_TYPES.RAID or event.type == RCE.consts.EVENT_TYPES.DUNGEON) then
 		local cache = self:getCacheForEventType(event.type)
+		if cache == nil then
+			error("No cache for " .. event.type .. "???")
+		end
 		if empty(event.raidOrDungeon) or event.raidOrDungeon <= 0 or event.raidOrDungeon > #cache then
 			self:printError(L.ErrorNoRaidOrDungeonChoosen)
 			return false

@@ -3,6 +3,7 @@
     "Lua.diagnostics.globals": [
         "Calendar_Show",
         "Calendar_LoadUI",
-        "Calendar_Hide"
+        "Calendar_Hide",
+        "NUM_CHAT_WINDOWS"
     ]
 }
