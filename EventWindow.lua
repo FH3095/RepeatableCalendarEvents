@@ -28,6 +28,7 @@ local function constructDefaultEvent()
 	local today = date("*t")
 	local ret = {
 		name = "",
+		enabled = true,
 		title = "",
 		desc = "",
 		type = RCE.consts.EVENT_TYPES.RAID,
@@ -60,7 +61,6 @@ function EventWindow:open(eventId)
 	log("OpenEventWindow", eventId, event)
 
 	local frame = RCE.gui:Create("Window")
-	--frame:SetCallback("OnClose",function(widget) frame:Release() end)
 	frame:SetLayout("Flow")
 	frame:EnableResize(true)
 	frame:SetTitle(L.EventWindowName)
@@ -68,11 +68,14 @@ function EventWindow:open(eventId)
 	frame:PauseLayout()
 
 	local name = self:createElement(frame, "EditBox", "EventName", event.name)
-	name:SetFullWidth(true)
+	name:SetRelativeWidth(0.49)
 	name:DisableButton(true)
 
+	local enabled = self:createElement(frame, "CheckBox", "EventEnabled", event.enabled)
+	enabled:SetRelativeWidth(0.49)
+
 	local title = self:createElement(frame, "EditBox", "EventTitle", event.title)
-	title:SetRelativeWidth(0.5)
+	title:SetRelativeWidth(0.49)
 	title:DisableButton(true)
 
 	local type = self:createElement(frame, "Dropdown", "EventType")
@@ -84,17 +87,17 @@ function EventWindow:open(eventId)
 		[Const.EVENT_TYPES.OTHER] = L["EventTypeOther"],
 	}
 	type:SetList(types)
-	type:SetRelativeWidth(0.5)
+	type:SetRelativeWidth(0.49)
 	type:SetValue(event.type)
 
 	local raidOrDungeon = self:createElement(frame, "Dropdown", "EventRaidOrDungeon")
-	raidOrDungeon:SetRelativeWidth(0.5)
+	raidOrDungeon:SetRelativeWidth(0.49)
 	raidOrDungeon:SetValue(event.raidOrDungeon)
 
 	local difficulty = self:createElement(frame, "Dropdown", "EventDifficulty")
 	local difficulties = { "Normal", "Heroic", "Mythic" }
 	difficulty:SetList(difficulties)
-	difficulty:SetRelativeWidth(0.5)
+	difficulty:SetRelativeWidth(0.49)
 	difficulty:SetValue(event.difficulty)
 
 	local desc = self:createElement(frame, "MultiLineEditBox", "EventDesc", event.desc)
@@ -167,7 +170,6 @@ function EventWindow:open(eventId)
 
 	self:registerForChangeToCheckOtherFields(frame, type, "Dropdown")
 	self:registerForChangeToCheckOtherFields(frame, raidOrDungeon, "Dropdown")
-	self:registerForChangeToCheckOtherFields(frame, guildEvent, "CheckBox")
 	self:checkFields(frame)
 end
 
@@ -257,6 +259,7 @@ function EventWindow:save(frame, eventId)
 	local event = {}
 
 	event.name = childs.EventName:GetText()
+	event.enabled = childs.EventEnabled:GetValue() and true or false
 	event.title = childs.EventTitle:GetText()
 	event.desc = childs.EventDesc:GetText()
 	event.type = childs.EventType:GetValue()

@@ -69,72 +69,74 @@ function EventRepeater:execute()
 	local currentTime = time()
 	local maxCreateTime = time() + RCE.db.profile.eventsInFuture * 86400
 	for key, event in pairs(RCE.db.profile.events) do
-		local dateTable = RCE.core:timeTableFromEvent(event)
-		local eventTime = time(dateTable)
-		log("RepeatEvent Check", event.name, date("%c", eventTime))
+		if event.enabled then
+			local dateTable = RCE.core:timeTableFromEvent(event)
+			local eventTime = time(dateTable)
+			log("RepeatEvent Check", event.name, date("%c", eventTime))
 
-		while eventTime < currentTime do
-			-- increase eventTime until it reaches today
-			dateTable = increaseDate(event.repeatType, event.repeatStep, dateTable)
-			eventTime = time(dateTable)
-			log("EventRepeater added to", date("%c", eventTime))
-		end
-
-		while eventTime < maxCreateTime do
-			log("RepeatEvent CheckFor", event.name, date("%c", eventTime))
-			local eventIndex = searchForEvent(dateTable, event.title)
-
-			if eventIndex >= 0 then
-				log("RepeatEvent Found", event.name, date("%c", eventTime))
-			else
-				-- Create event if not found
-				-- First write date from DateTable to the event
-				dateTableToEvent(dateTable, event)
-
-				local eventCreateFunc = function()
-					local eventIndex
-					RCE.work:add("CALENDAR_NEW_EVENT", nil, false)
-					RCE.work:add("Find event", 0, function()
-						eventIndex = searchForEvent(dateTable, event.title)
-						if eventIndex < 0 then
-							error("Cant find just created event " .. event.title .. " on " .. date("%c", eventTime))
-						end
-					end)
-
-					local invitees = RCE.core:splitStringToArray(event.autoInvite)
-					if table.getn(invitees) > 0 then
-						RCE.work:add("Open event", 0,
-							function() C_Calendar.CloseEvent(); C_Calendar.OpenEvent(0, dateTable.day, eventIndex) end)
-						RCE.work:add("CALENDAR_OPEN_EVENT", nil, false)
-						for _, invitee in pairs(invitees) do
-							RCE.work:add("Invite " .. invitee, 0,
-								function(invitee)
-									log("RepeatEvent invite", invitee, event.title)
-									C_Calendar.EventInvite(invitee)
-								end, invitee)
-							RCE.work:add("CALENDAR_UPDATE_INVITE_LIST", RCE.consts.INTERVAL_INVITE, true)
-						end
-						RCE.work:add("Close event", 0, function() C_Calendar.CloseEvent() end)
-						RCE.work:add("CALENDAR_CLOSE_EVENT", nil, false)
-					end
-					RCE.work:add("Wait for repeat check", RCE.consts.INTERVAL_REPEAT_CHECK, function() end)
-					RCE.work:add("Run repeat check", RCE.consts.WORK_CONTINUE_MANUALLY, function() RCE.eventRepeater:execute() end)
-					RCE.work:runNext()
-				end
-
-				log("RepeatEvent Create", event.name, date("%c", eventTime), event)
-				createWoWEvent(event)
-				RCE.confirmWindow:open(eventCreateFunc)
-				return
+			while eventTime < currentTime do
+				-- increase eventTime until it reaches today
+				dateTable = increaseDate(event.repeatType, event.repeatStep, dateTable)
+				eventTime = time(dateTable)
+				log("EventRepeater added to", date("%c", eventTime))
 			end
 
-			-- increase date for next check round
-			dateTable = increaseDate(event.repeatType, event.repeatStep, dateTable)
-			eventTime = time(dateTable)
+			while eventTime < maxCreateTime do
+				log("RepeatEvent CheckFor", event.name, date("%c", eventTime))
+				local eventIndex = searchForEvent(dateTable, event.title)
+
+				if eventIndex >= 0 then
+					log("RepeatEvent Found", event.name, date("%c", eventTime))
+				else
+					-- Create event if not found
+					-- First write date from DateTable to the event
+					dateTableToEvent(dateTable, event)
+
+					local eventCreateFunc = function()
+						local eventIndex
+						RCE.work:add("CALENDAR_NEW_EVENT", nil, false)
+						RCE.work:add("Find event", 0, function()
+							eventIndex = searchForEvent(dateTable, event.title)
+							if eventIndex < 0 then
+								error("Cant find just created event " .. event.title .. " on " .. date("%c", eventTime))
+							end
+						end)
+
+						local invitees = RCE.core:splitStringToArray(event.autoInvite)
+						if table.getn(invitees) > 0 then
+							RCE.work:add("Open event", 0,
+								function() C_Calendar.CloseEvent(); C_Calendar.OpenEvent(0, dateTable.day, eventIndex) end)
+							RCE.work:add("CALENDAR_OPEN_EVENT", nil, false)
+							for _, invitee in pairs(invitees) do
+								RCE.work:add("Invite " .. invitee, 0,
+									function(invitee)
+										log("RepeatEvent invite", invitee, event.title)
+										C_Calendar.EventInvite(invitee)
+									end, invitee)
+								RCE.work:add("CALENDAR_UPDATE_INVITE_LIST", RCE.consts.INTERVAL_INVITE, true)
+							end
+							RCE.work:add("Close event", 0, function() C_Calendar.CloseEvent() end)
+							RCE.work:add("CALENDAR_CLOSE_EVENT", nil, false)
+						end
+						RCE.work:add("Wait for repeat check", RCE.consts.INTERVAL_REPEAT_CHECK, function() end)
+						RCE.work:add("Run repeat check", RCE.consts.WORK_CONTINUE_MANUALLY, function() RCE.eventRepeater:execute() end)
+						RCE.work:runNext()
+					end
+
+					log("RepeatEvent Create", event.name, date("%c", eventTime), event)
+					createWoWEvent(event)
+					RCE.confirmWindow:open(eventCreateFunc)
+					return
+				end
+
+				-- increase date for next check round
+				dateTable = increaseDate(event.repeatType, event.repeatStep, dateTable)
+				eventTime = time(dateTable)
+			end
+			-- Finally save the dateTable to the event, so that the next checks ignore already created events
+			dateTableToEvent(dateTable, event)
+			log("RepeatEvent NextDate", event.name, date("%c", eventTime))
 		end
-		-- Finally save the dateTable to the event, so that the next checks ignore already created events
-		dateTableToEvent(dateTable, event)
-		log("RepeatEvent NextDate", event.name, date("%c", eventTime))
 	end
 
 	-- when we reach here, we are done. Close Calendar
