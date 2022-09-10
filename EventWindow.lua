@@ -107,7 +107,7 @@ function EventWindow:open(eventId)
 		hours[i] = format("%02u", i)
 	end
 	hour:SetList(hours)
-	hour:SetRelativeWidth(0.2)
+	hour:SetRelativeWidth(0.19)
 	hour:SetValue(event.hour)
 
 	local minute = self:createElement(frame, "Dropdown", "EventMinute")
@@ -116,7 +116,7 @@ function EventWindow:open(eventId)
 		minutes[i] = format("%02u", i)
 	end
 	minute:SetList(minutes)
-	minute:SetRelativeWidth(0.2)
+	minute:SetRelativeWidth(0.19)
 	minute:SetValue(event.minute)
 
 	local day = self:createElement(frame, "EditBox", "EventDay", event.day)

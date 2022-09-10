@@ -1,11 +1,15 @@
 local log = FH3095Debug.log
 local RCE = RepeatableCalendarEvents
 
-local AutoMod = {}
---RCE.Class:createSingleton("autoMod", AutoMod, {queue = RCE.List.new(), currentEvent = nil, autoModChars = nil, workQueue = RCE.WorkQueue.new()})
+local AutoMod = {
+	queue = RCE.classes.List(),
+	currentEvent = nil,
+}
+RCE.autoMod = AutoMod
 
 function AutoMod:enqueueNextEvent()
 	if self.queue:isEmpty() then
+		Calendar_Hide()
 		RCE.console:Printf("%s: %s", RCE.consts.ADDON_NAME_COLORED, RCE.l.CalendarUpdateFinished)
 		return
 	end
@@ -14,16 +18,12 @@ function AutoMod:enqueueNextEvent()
 	RCE.core:setCalendarMonthToDate(nextEvent.year, nextEvent.month)
 	log("CheckAutoMod: Enqueue Event", nextEvent.year, nextEvent.month, nextEvent.day, nextEvent.index)
 	self.currentEvent = nextEvent
-	self.workQueue:addTask(function() C_Calendar.OpenEvent(0, nextEvent.day, nextEvent.index) end, nil, 1)
-	self.workQueue:addTask(function() self:parseEvent() end, "CALENDAR_OPEN_EVENT")
+	RCE.work:add("Open Event", 0, function() C_Calendar.OpenEvent(0, nextEvent.day, nextEvent.index) end)
+	RCE.work:add("CALENDAR_OPEN_EVENT", nil, false)
+	RCE.work:add("Parse Event", 0, function() self:parseEvent() end)
 end
 
 function AutoMod:parseEvent()
-	-- CALENDAR_OPEN_EVENT sometimes fires twice, so check that currentEvent is set and reset after the check
-	if self.currentEvent == nil then
-		return
-	end
-	self.currentEvent = nil
 	log("AutoMod.parseEvent")
 	if C_Calendar.EventCanEdit() then
 		local toCheckEvent = C_Calendar.GetEventInfo()
@@ -38,15 +38,16 @@ function AutoMod:parseEvent()
 					charName = charName .. "-" .. GetRealmName()
 				end
 				if (inviteInfo.modStatus == nil or inviteInfo.modStatus == "") and tContains(self.autoModChars, charName) then
-					log("AutoMod.parseEvent: Set Mod", charName, inviteeIndex)
-					C_Calendar.EventSetModerator(inviteeIndex)
+					RCE.work:add("Set Mod", 1, function(charName, inviteeIndex)
+						log("AutoMod.parseEvent: Set Mod", charName, inviteeIndex)
+						C_Calendar.EventSetModerator(inviteeIndex)
+					end, charName, inviteeIndex)
 				end
 			end
 		end
 	end
-	C_Calendar.CloseEvent()
-
-	self.workQueue:addTask(function() self:enqueueNextEvent() end, nil, 1)
+	RCE.work:add("Close Event", 1, function() C_Calendar.CloseEvent() end)
+	RCE.work:add("AutoMod check next", 1, function() self:enqueueNextEvent() end)
 end
 
 function AutoMod:execute()
@@ -70,5 +71,5 @@ function AutoMod:execute()
 		dateTable = RCE.core:normalizeDateTable(dateTable)
 	end
 
-	self:enqueueNextEvent()
+	RCE.work:add("AutoMod check next", 1, function() self:enqueueNextEvent() end)
 end

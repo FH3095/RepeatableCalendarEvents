@@ -133,12 +133,12 @@ function EventRepeater:execute()
 			eventTime = time(dateTable)
 		end
 		-- Finally save the dateTable to the event, so that the next checks ignore already created events
-		--dateTableToEvent(dateTable, event)
+		dateTableToEvent(dateTable, event)
 		log("RepeatEvent NextDate", event.name, date("%c", eventTime))
 	end
 
 	-- when we reach here, we are done. Close Calendar
 	RCE.work:add("Close Calendar", 0, function() Calendar_Hide() end)
 	RCE.work:runNext()
-	--RCE.core:scheduleAutoModCheck()
+	RCE.core:scheduleAutoModCheck()
 end

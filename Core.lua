@@ -188,8 +188,7 @@ function Core:validateEvent(event)
 	return true
 end
 
-function Core:scheduleRepeatCheck()
-	log("ScheduleRepeatCheck")
+local function scheduleOpenCalendar()
 	-- We have to use Calendar_Show() which shows the calendar ui. Without the ui, we cant open an event to invite people
 	RCE.work:add("Open Calendar", 1,
 		function()
@@ -198,15 +197,17 @@ function Core:scheduleRepeatCheck()
 			end
 			Calendar_Show()
 		end)
+end
+
+function Core:scheduleRepeatCheck()
+	log("ScheduleRepeatCheck")
+	scheduleOpenCalendar()
 	RCE.work:add("Run first repeat check", RCE.consts.WORK_CONTINUE_MANUALLY, function() RCE.eventRepeater:execute() end)
 end
 
 function Core:scheduleAutoModCheck()
-	if self.autoModCheckTimer ~= nil and RCE.timers:TimeLeft(self.autoModCheckTimer) > 0 then
-		return
-	end
-
-	self.autoModCheckTimer = RCE.timers:ScheduleTimer(function() RCE.autoMod:execute() end, 10)
+	scheduleOpenCalendar()
+	RCE.work:add("Start AutoMod", 10, function() RCE.autoMod:execute() end)
 end
 
 function Core:setCalendarMonthToDate(yearOrDateTable, month)
