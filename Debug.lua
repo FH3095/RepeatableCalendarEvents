@@ -40,7 +40,9 @@ function FH3095Debug.log(str, ...)
 		str = str .. objToString(val) .. " ; "
 	end
 
-	FH3095Debug.logFrame:AddMessage(str)
+	for i = 1, #str, 4000 do
+		FH3095Debug.logFrame:AddMessage(str:sub(i, i + 4000 - 1))
+	end
 end
 
 function FH3095Debug.onEnable()
