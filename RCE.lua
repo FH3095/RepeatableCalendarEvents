@@ -85,20 +85,24 @@ function RCE:OnEnable()
 		registerEventPrint()
 	end
 
-	-- On login, ask for calendar at PlayerAlive
-	local loginEvent = "PLAYER_ALIVE"
-	local cancelOnPlayerAlive = function()
-		log("Cancel " .. loginEvent .. " listener")
-		self.events:UnregisterEvent(loginEvent)
+	local today = date("%Y-%m-%d")
+	if not RCE.db.profile.loginCheckOncePerDay or RCE.db.profile.lastLoginCheck != today then
+		-- On login, ask for calendar at PlayerAlive
+		local loginEvent = "PLAYER_ALIVE"
+		local cancelOnPlayerAlive = function()
+			log("Cancel " .. loginEvent .. " listener")
+			self.events:UnregisterEvent(loginEvent)
+		end
+		local timer = self.timers:ScheduleTimer(cancelOnPlayerAlive, self.consts.WAIT_FOR_LOGIN_EVENT)
+		local onPlayerAlive = function()
+			log(loginEvent .. " occured")
+			self.events:UnregisterEvent(loginEvent)
+			self.timers:CancelTimer(timer)
+			self.core:scheduleRepeatCheck()
+			RCE.db.profile.lastLoginCheck = today
+		end
+		self.events:RegisterEvent(loginEvent, onPlayerAlive)
 	end
-	local timer = self.timers:ScheduleTimer(cancelOnPlayerAlive, self.consts.WAIT_FOR_LOGIN_EVENT)
-	local onPlayerAlive = function()
-		log(loginEvent .. " occured")
-		self.events:UnregisterEvent(loginEvent)
-		self.timers:CancelTimer(timer)
-		self.core:scheduleRepeatCheck()
-	end
-	self.events:RegisterEvent(loginEvent, onPlayerAlive)
 
 	local consoleCommandFunc = function(msg, editbox)
 		self.core:consoleParseCommand(msg, editbox)

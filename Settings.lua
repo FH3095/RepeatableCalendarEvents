@@ -32,6 +32,10 @@ function Settings:createOptions()
 						desc      = RCE.l.AutoModNamesDesc,
 						multiline = true,
 						width     = "full",
+					},
+					loginCheckOncePerDay = {
+						type      = "toggle",
+						name      = RCE.l.OnlyOncePerDayName,
 					}
 				}
 			},
