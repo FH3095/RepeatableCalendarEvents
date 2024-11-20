@@ -36,6 +36,7 @@ function Settings:createOptions()
 					loginCheckOncePerDay = {
 						type      = "toggle",
 						name      = RCE.l.OnlyOncePerDayName,
+						width     = "full",
 					}
 				}
 			},

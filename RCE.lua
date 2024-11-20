@@ -86,7 +86,7 @@ function RCE:OnEnable()
 	end
 
 	local today = date("%Y-%m-%d")
-	if not RCE.db.profile.loginCheckOncePerDay or RCE.db.profile.lastLoginCheck != today then
+	if not RCE.db.profile.loginCheckOncePerDay or RCE.db.profile.lastLoginCheck ~= today then
 		-- On login, ask for calendar at PlayerAlive
 		local loginEvent = "PLAYER_ALIVE"
 		local cancelOnPlayerAlive = function()
