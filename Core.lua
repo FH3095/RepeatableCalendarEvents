@@ -15,8 +15,9 @@ local function buildCache(textureInfos)
 	local sortEntries = function(a, b)
 		if a.expansion ~= b.expansion then
 			return a.expansion > b.expansion
+		else
+			return a.mapId > b.mapId
 		end
-		return a.texture > b.texture
 	end
 	local result = {}
 
@@ -42,6 +43,7 @@ local function buildCache(textureInfos)
 
 			result[mapId] = {
 				title = title,
+				mapId = mapId,
 				expansion = expansion,
 				expansionName = _G["EXPANSION_NAME" .. expansion],
 				isLFR = isLFR,
